@@ -1,0 +1,668 @@
+--========================================================--
+--              DQ 😈 SMOOTH FLY V4
+--========================================================--
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+local GUI_NAME = "DqSmoothFly_V4"
+
+--========================================================--
+-- STATE
+--========================================================--
+
+local Character
+local Humanoid
+local Root
+
+local Flying = false
+local Speed = 60
+local Vertical = 0
+
+local FlyAttachment
+local FlyVelocity
+local FlyOrientation
+
+local FlyLoop
+local DeathConnection
+
+--========================================================--
+-- CHARACTER
+--========================================================--
+
+local function GetCharacter()
+	Character = Player.Character or Player.CharacterAdded:Wait()
+	Humanoid = Character:WaitForChild("Humanoid")
+	Root = Character:WaitForChild("HumanoidRootPart")
+
+	return Character, Humanoid, Root
+end
+
+GetCharacter()
+
+--========================================================--
+-- REMOVE OLD GUI
+--========================================================--
+
+for _, name in ipairs({
+	"SmoothFly_V2",
+	"SmoothFly_V3",
+	"SmoothFly_V4",
+	"DqSmoothFly_V4"
+}) do
+	local old = PlayerGui:FindFirstChild(name)
+	if old then
+		old:Destroy()
+	end
+end
+
+--========================================================--
+-- GUI
+--========================================================--
+
+local GUI = Instance.new("ScreenGui")
+GUI.Name = GUI_NAME
+GUI.ResetOnSpawn = false
+GUI.IgnoreGuiInset = true
+GUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+GUI.Parent = PlayerGui
+
+local Main = Instance.new("Frame")
+Main.Size = UDim2.fromOffset(285, 210)
+Main.Position = UDim2.new(0.5, -142, 0.18, 0)
+Main.BackgroundColor3 = Color3.fromRGB(23, 23, 29)
+Main.BorderSizePixel = 0
+Main.Active = true
+Main.Parent = GUI
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 15)
+MainCorner.Parent = Main
+
+--========================================================--
+-- LOGO DQ
+--========================================================--
+
+local Logo = Instance.new("TextButton")
+Logo.Size = UDim2.fromOffset(45, 45)
+Logo.Position = UDim2.fromOffset(9, 9)
+Logo.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+Logo.Text = "dq"
+Logo.TextSize = 18
+Logo.Font = Enum.Font.GothamBold
+Logo.TextColor3 = Color3.new(1, 1, 1)
+Logo.AutoButtonColor = false
+Logo.Parent = Main
+
+local LogoCorner = Instance.new("UICorner")
+LogoCorner.CornerRadius = UDim.new(1, 0)
+LogoCorner.Parent = Logo
+
+--========================================================--
+-- TITLE + ICON
+--========================================================--
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.fromOffset(175, 24)
+Title.Position = UDim2.fromOffset(64, 9)
+Title.BackgroundTransparency = 1
+Title.Text = "😈 SMOOTH FLY"
+Title.TextSize = 17
+Title.Font = Enum.Font.GothamBold
+Title.TextColor3 = Color3.new(1, 1, 1)
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Main
+
+local Status = Instance.new("TextLabel")
+Status.Size = UDim2.fromOffset(175, 20)
+Status.Position = UDim2.fromOffset(64, 34)
+Status.BackgroundTransparency = 1
+Status.Text = "STATUS: OFF"
+Status.TextSize = 12
+Status.Font = Enum.Font.Gotham
+Status.TextColor3 = Color3.fromRGB(255, 70, 70)
+Status.TextXAlignment = Enum.TextXAlignment.Left
+Status.Parent = Main
+
+--========================================================--
+-- MINIMIZE
+--========================================================--
+
+local Minimize = Instance.new("TextButton")
+Minimize.Size = UDim2.fromOffset(36, 36)
+Minimize.Position = UDim2.new(1, -45, 0, 9)
+Minimize.BackgroundColor3 = Color3.fromRGB(48, 48, 58)
+Minimize.Text = "—"
+Minimize.TextSize = 18
+Minimize.Font = Enum.Font.GothamBold
+Minimize.TextColor3 = Color3.new(1, 1, 1)
+Minimize.Parent = Main
+
+local MinCorner = Instance.new("UICorner")
+MinCorner.CornerRadius = UDim.new(0, 9)
+MinCorner.Parent = Minimize
+
+--========================================================--
+-- FLY BUTTON
+--========================================================--
+
+local Toggle = Instance.new("TextButton")
+Toggle.Name = "FlyButton"
+Toggle.Size = UDim2.fromOffset(245, 42)
+Toggle.Position = UDim2.fromOffset(20, 65)
+Toggle.BackgroundColor3 = Color3.fromRGB(55, 55, 65)
+Toggle.Text = "FLY : OFF"
+Toggle.TextSize = 15
+Toggle.Font = Enum.Font.GothamBold
+Toggle.TextColor3 = Color3.new(1, 1, 1)
+Toggle.AutoButtonColor = true
+Toggle.Active = true
+Toggle.Selectable = true
+Toggle.Parent = Main
+
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(0, 10)
+ToggleCorner.Parent = Toggle
+
+--========================================================--
+-- SPEED
+--========================================================--
+
+local SpeedLabel = Instance.new("TextLabel")
+SpeedLabel.Size = UDim2.fromOffset(245, 22)
+SpeedLabel.Position = UDim2.fromOffset(20, 114)
+SpeedLabel.BackgroundTransparency = 1
+SpeedLabel.Text = "FLY SPEED : 60"
+SpeedLabel.TextSize = 14
+SpeedLabel.Font = Enum.Font.GothamBold
+SpeedLabel.TextColor3 = Color3.new(1, 1, 1)
+SpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
+SpeedLabel.Parent = Main
+
+local Slider = Instance.new("Frame")
+Slider.Size = UDim2.fromOffset(245, 9)
+Slider.Position = UDim2.fromOffset(20, 148)
+Slider.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+Slider.BorderSizePixel = 0
+Slider.Active = true
+Slider.Parent = Main
+
+local SliderCorner = Instance.new("UICorner")
+SliderCorner.CornerRadius = UDim.new(1, 0)
+SliderCorner.Parent = Slider
+
+local Fill = Instance.new("Frame")
+Fill.Size = UDim2.new(Speed / 1000, 0, 1, 0)
+Fill.BackgroundColor3 = Color3.fromRGB(70, 165, 255)
+Fill.BorderSizePixel = 0
+Fill.Parent = Slider
+
+local FillCorner = Instance.new("UICorner")
+FillCorner.CornerRadius = UDim.new(1, 0)
+FillCorner.Parent = Fill
+
+local Knob = Instance.new("Frame")
+Knob.Size = UDim2.fromOffset(17, 17)
+Knob.AnchorPoint = Vector2.new(0.5, 0.5)
+Knob.Position = UDim2.new(Speed / 1000, 0, 0.5, 0)
+Knob.BackgroundColor3 = Color3.new(1, 1, 1)
+Knob.BorderSizePixel = 0
+Knob.Parent = Slider
+
+local KnobCorner = Instance.new("UICorner")
+KnobCorner.CornerRadius = UDim.new(1, 0)
+KnobCorner.Parent = Knob
+
+--========================================================--
+-- MOBILE UP / DOWN
+--========================================================--
+
+local VerticalFrame = Instance.new("Frame")
+VerticalFrame.Size = UDim2.fromOffset(60, 130)
+VerticalFrame.Position = UDim2.new(1, -75, 0.5, -65)
+VerticalFrame.BackgroundTransparency = 1
+VerticalFrame.Visible = false
+VerticalFrame.Parent = GUI
+
+local Up = Instance.new("TextButton")
+Up.Size = UDim2.fromOffset(60, 60)
+Up.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+Up.Text = "▲"
+Up.TextSize = 25
+Up.Font = Enum.Font.GothamBold
+Up.TextColor3 = Color3.new(1, 1, 1)
+Up.Parent = VerticalFrame
+
+local UpCorner = Instance.new("UICorner")
+UpCorner.CornerRadius = UDim.new(1, 0)
+UpCorner.Parent = Up
+
+local Down = Instance.new("TextButton")
+Down.Size = UDim2.fromOffset(60, 60)
+Down.Position = UDim2.fromOffset(0, 70)
+Down.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+Down.Text = "▼"
+Down.TextSize = 25
+Down.Font = Enum.Font.GothamBold
+Down.TextColor3 = Color3.new(1, 1, 1)
+Down.Parent = VerticalFrame
+
+local DownCorner = Instance.new("UICorner")
+DownCorner.CornerRadius = UDim.new(1, 0)
+DownCorner.Parent = Down
+
+--========================================================--
+-- UP / DOWN
+--========================================================--
+
+Up.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Touch
+		or input.UserInputType == Enum.UserInputType.MouseButton1 then
+		Vertical = 1
+	end
+end)
+
+Up.InputEnded:Connect(function()
+	Vertical = 0
+end)
+
+Down.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Touch
+		or input.UserInputType == Enum.UserInputType.MouseButton1 then
+		Vertical = -1
+	end
+end)
+
+Down.InputEnded:Connect(function()
+	Vertical = 0
+end)
+
+--========================================================--
+-- DRAG MENU
+--========================================================--
+
+local Dragging = false
+local DragStart
+local StartPosition
+
+local function BeginDrag(input)
+	Dragging = true
+	DragStart = input.Position
+	StartPosition = Main.Position
+end
+
+local function UpdateDrag(input)
+	if not Dragging then
+		return
+	end
+
+	local Delta = input.Position - DragStart
+
+	Main.Position = UDim2.new(
+		StartPosition.X.Scale,
+		StartPosition.X.Offset + Delta.X,
+		StartPosition.Y.Scale,
+		StartPosition.Y.Offset + Delta.Y
+	)
+end
+
+local function EndDrag()
+	Dragging = false
+end
+
+for _, object in ipairs({Title, Logo}) do
+	object.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.Touch
+			or input.UserInputType == Enum.UserInputType.MouseButton1 then
+			BeginDrag(input)
+		end
+	end)
+
+	object.InputEnded:Connect(EndDrag)
+end
+
+UIS.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Touch
+		or input.UserInputType == Enum.UserInputType.MouseMovement then
+		UpdateDrag(input)
+	end
+end)
+
+UIS.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Touch
+		or input.UserInputType == Enum.UserInputType.MouseButton1 then
+		EndDrag()
+	end
+end)
+
+--========================================================--
+-- MINIMIZE
+--========================================================--
+
+local Minimized = false
+
+Minimize.Activated:Connect(function()
+
+	Minimized = not Minimized
+
+	Toggle.Visible = not Minimized
+	SpeedLabel.Visible = not Minimized
+	Slider.Visible = not Minimized
+
+	if Minimized then
+		Main.Size = UDim2.fromOffset(285, 62)
+		Minimize.Text = "+"
+	else
+		Main.Size = UDim2.fromOffset(285, 210)
+		Minimize.Text = "—"
+	end
+
+end)
+
+--========================================================--
+-- SPEED
+--========================================================--
+
+local SpeedDragging = false
+
+local function SetSpeed(X)
+
+	local Width = Slider.AbsoluteSize.X
+
+	if Width <= 0 then
+		return
+	end
+
+	local Percent = math.clamp(
+		(X - Slider.AbsolutePosition.X) / Width,
+		0,
+		1
+	)
+
+	Speed = math.clamp(
+		math.floor(Percent * 1000 + 0.5),
+		1,
+		1000
+	)
+
+	SpeedLabel.Text = "FLY SPEED : " .. Speed
+
+	Fill.Size = UDim2.new(
+		Speed / 1000,
+		0,
+		1,
+		0
+	)
+
+	Knob.Position = UDim2.new(
+		Speed / 1000,
+		0,
+		0.5,
+		0
+	)
+end
+
+Slider.InputBegan:Connect(function(input)
+
+	if input.UserInputType == Enum.UserInputType.Touch
+		or input.UserInputType == Enum.UserInputType.MouseButton1 then
+
+		SpeedDragging = true
+		SetSpeed(input.Position.X)
+	end
+end)
+
+UIS.InputChanged:Connect(function(input)
+
+	if SpeedDragging then
+
+		if input.UserInputType == Enum.UserInputType.Touch
+			or input.UserInputType == Enum.UserInputType.MouseMovement then
+
+			SetSpeed(input.Position.X)
+		end
+	end
+end)
+
+UIS.InputEnded:Connect(function(input)
+
+	if input.UserInputType == Enum.UserInputType.Touch
+		or input.UserInputType == Enum.UserInputType.MouseButton1 then
+
+		SpeedDragging = false
+	end
+end)
+
+--========================================================--
+-- STOP FLY
+--========================================================--
+
+local function StopFly()
+
+	Flying = false
+	Vertical = 0
+
+	if FlyLoop then
+		FlyLoop:Disconnect()
+		FlyLoop = nil
+	end
+
+	if DeathConnection then
+		DeathConnection:Disconnect()
+		DeathConnection = nil
+	end
+
+	if FlyVelocity then
+		FlyVelocity:Destroy()
+		FlyVelocity = nil
+	end
+
+	if FlyOrientation then
+		FlyOrientation:Destroy()
+		FlyOrientation = nil
+	end
+
+	if FlyAttachment then
+		FlyAttachment:Destroy()
+		FlyAttachment = nil
+	end
+
+	if Humanoid and Humanoid.Parent then
+		Humanoid.AutoRotate = true
+	end
+
+	Toggle.Text = "FLY : OFF"
+	Toggle.BackgroundColor3 = Color3.fromRGB(55, 55, 65)
+
+	Status.Text = "STATUS: OFF"
+	Status.TextColor3 = Color3.fromRGB(255, 70, 70)
+
+	VerticalFrame.Visible = false
+end
+
+--========================================================--
+-- START FLY
+--========================================================--
+
+local function StartFly()
+
+	if Flying then
+		return
+	end
+
+	GetCharacter()
+
+	if not Humanoid or not Root then
+		return
+	end
+
+	Flying = true
+	Vertical = 0
+
+	-- Attachment
+	FlyAttachment = Instance.new("Attachment")
+	FlyAttachment.Name = "DqSmoothFly_Attachment"
+	FlyAttachment.Parent = Root
+
+	-- Velocity
+	FlyVelocity = Instance.new("LinearVelocity")
+	FlyVelocity.Name = "DqSmoothFly_Velocity"
+	FlyVelocity.Attachment0 = FlyAttachment
+	FlyVelocity.RelativeTo = Enum.ActuatorRelativeTo.World
+
+	-- Không giới hạn lực
+	FlyVelocity.ForceLimitsEnabled = false
+	FlyVelocity.VectorVelocity = Vector3.zero
+	FlyVelocity.Parent = Root
+
+	-- Orientation
+	FlyOrientation = Instance.new("AlignOrientation")
+	FlyOrientation.Name = "DqSmoothFly_Orientation"
+	FlyOrientation.Attachment0 = FlyAttachment
+	FlyOrientation.Mode = Enum.OrientationAlignmentMode.OneAttachment
+	FlyOrientation.RigidityEnabled = false
+	FlyOrientation.Responsiveness = 25
+	FlyOrientation.MaxTorque = math.huge
+	FlyOrientation.Parent = Root
+
+	Humanoid.AutoRotate = false
+	Humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
+
+	Toggle.Text = "FLY : ON"
+	Toggle.BackgroundColor3 = Color3.fromRGB(0, 170, 90)
+
+	Status.Text = "STATUS: ON"
+	Status.TextColor3 = Color3.fromRGB(70, 255, 120)
+
+	VerticalFrame.Visible = UIS.TouchEnabled
+
+	-- Death
+	DeathConnection = Humanoid.Died:Connect(function()
+		StopFly()
+	end)
+
+	--====================================================--
+	-- FLY LOOP
+	--====================================================--
+
+	FlyLoop = RunService.Heartbeat:Connect(function()
+
+		if not Flying then
+			return
+		end
+
+		if not Character
+			or not Character.Parent
+			or not Humanoid
+			or Humanoid.Health <= 0
+			or not Root
+			or not Root.Parent then
+
+			StopFly()
+			return
+		end
+
+		local Camera = workspace.CurrentCamera
+
+		if not Camera then
+			return
+		end
+
+		-- Mobile joystick
+		local Move = Humanoid.MoveDirection
+		local Direction = Vector3.zero
+
+		if Move.Magnitude > 0.05 then
+
+			Direction = Move.Unit
+
+		else
+
+			-- PC WASD
+			local Keyboard = Vector3.zero
+
+			if UIS:IsKeyDown(Enum.KeyCode.W) then
+				Keyboard += Camera.CFrame.LookVector
+			end
+
+			if UIS:IsKeyDown(Enum.KeyCode.S) then
+				Keyboard -= Camera.CFrame.LookVector
+			end
+
+			if UIS:IsKeyDown(Enum.KeyCode.A) then
+				Keyboard -= Camera.CFrame.RightVector
+			end
+
+			if UIS:IsKeyDown(Enum.KeyCode.D) then
+				Keyboard += Camera.CFrame.RightVector
+			end
+
+			if Keyboard.Magnitude > 0.05 then
+				Direction = Keyboard.Unit
+			end
+		end
+
+		-- Lên / xuống
+		if Vertical ~= 0 then
+			Direction += Vector3.new(0, Vertical, 0)
+		end
+
+		-- Speed
+		if Direction.Magnitude > 0.01 then
+			Direction = Direction.Unit * Speed
+		else
+			Direction = Vector3.zero
+		end
+
+		FlyVelocity.VectorVelocity = Direction
+
+		-- Hướng nhìn
+		local Look = Camera.CFrame.LookVector
+
+		local FlatLook = Vector3.new(
+			Look.X,
+			0,
+			Look.Z
+		)
+
+		if FlatLook.Magnitude > 0.01 then
+			FlyOrientation.CFrame = CFrame.lookAt(
+				Vector3.zero,
+				FlatLook.Unit
+			)
+		end
+
+	end)
+end
+
+--========================================================--
+-- ON / OFF
+--========================================================--
+
+Toggle.Activated:Connect(function()
+
+	if Flying then
+		StopFly()
+	else
+		StartFly()
+	end
+
+end)
+
+--========================================================--
+-- RESPAWN
+--========================================================--
+
+Player.CharacterAdded:Connect(function(NewCharacter)
+
+	StopFly()
+
+	Character = NewCharacter
+	Humanoid = Character:WaitForChild("Humanoid")
+	Root = Character:WaitForChild("HumanoidRootPart")
+
+end)
